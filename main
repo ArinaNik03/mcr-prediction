@@ -1,0 +1,37 @@
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from flask import Flask, render_template, request
+
+
+data = pd.read_csv('synthetic_cancer_risk_data.csv')
+X = data[['Period_Duration', 'Early_Pregnancy', 'Physical_Activity', 'Genetic_Predisposition', 'Smoking', 'Overweight']]
+y = data['Cancer_Risk']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+
+app = Flask(__name__)
+
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    prediction = None
+    probability = None
+
+    if request.method == 'POST':
+        input_data = [float(request.form[key]) for key in
+                      ['Period_Duration', 'Early_Pregnancy', 'Physical_Activity', 'Genetic_Predisposition', 'Smoking',
+                       'Overweight']]
+        prediction = model.predict([input_data])[0]
+        probability = model.predict_proba([input_data])[0][1]
+
+    return render_template('index.html', prediction=prediction, probability=probability)
+
+
+if __name__ == "__main__":
+    app.run(debug=True, port=3000)
